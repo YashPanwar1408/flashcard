@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, RefreshCw, Trash2, Download, Upload, Sparkles } from 'lucide-react';
+import { Loader2, RefreshCw, Download, Upload, Sparkles } from 'lucide-react';
 import { loadFlashcards, saveFlashcards } from '@/utils/localStorage';
 import { mockFlashcards } from '@/mockData';
 import { 
@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Label } from '@/components/ui/label';
+import { Flashcard } from '@/types';
 
 export default function SettingsPage() {
   const [isResetting, setIsResetting] = useState(false);
@@ -87,7 +87,7 @@ export default function SettingsPage() {
         }
         
         // Validate the imported data has the right structure
-        const isValid = importedData.every((card: any) => 
+        const isValid = importedData.every((card: Flashcard) => 
           card.id && card.question && card.answer && card.deck && 
           card.nextReview && typeof card.interval === 'number'
         );
@@ -97,7 +97,7 @@ export default function SettingsPage() {
         }
         
         // Convert string dates to Date objects
-        const processedData = importedData.map((card: any) => ({
+        const processedData = importedData.map((card: Flashcard) => ({
           ...card,
           nextReview: new Date(card.nextReview)
         }));

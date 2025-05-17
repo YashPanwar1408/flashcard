@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Flashcard } from '../types';
 import { updateFlashcardReview } from '../utils/spacedRepetition';
-import { getDeckBgColor, getDeckTextColor, getDeckLightBgColor, getDeckDarkTextColor } from '../utils/deckColors';
+import { getDeckBgColor } from '../utils/deckColors';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +12,11 @@ import { CheckCircle, XCircle } from 'lucide-react';
 interface FlashcardReviewProps {
   card: Flashcard;
   onCardReviewed: (updatedCard: Flashcard) => void;
-  onComplete?: () => void;
 }
 
 export default function FlashcardReview({ 
   card, 
-  onCardReviewed,
-  onComplete 
+  onCardReviewed
 }: FlashcardReviewProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -43,9 +41,6 @@ export default function FlashcardReview({
 
   // Get consistent colors for the deck
   const deckBgColor = getDeckBgColor(card.deck);
-  const deckTextColor = getDeckTextColor(card.deck);
-  const deckLightBg = getDeckLightBgColor(card.deck);
-  const deckDarkText = getDeckDarkTextColor(card.deck);
 
   return (
     <div className="w-full max-w-xl mx-auto">
@@ -91,7 +86,7 @@ export default function FlashcardReview({
           </Card>
           
           {/* Back of card */}
-          <Card className="absolute w-full h-full backface-hidden rotate-y-180 shadow-lg overflow-hidden border-2 flashcard-back">
+          <Card className="absolute w-full h-full backface-hidden shadow-lg overflow-hidden border-2 rotate-y-180 flashcard-back">
             <CardHeader className={`${deckBgColor} text-center`}>
               <h3 className="text-xl font-semibold text-white">Answer</h3>
             </CardHeader>
@@ -110,7 +105,7 @@ export default function FlashcardReview({
                 size="lg"
               >
                 <XCircle className="mr-1 h-5 w-5" />
-                Don't Know
+                Don&apos;t Know
               </Button>
               <Button
                 onClick={() => handleResponse(true)}
@@ -126,7 +121,7 @@ export default function FlashcardReview({
         </div>
       </div>
       
-      <Card className="bg-muted/30 mb-2">
+      <Card className="mb-4">
         <CardContent className="p-4 flex justify-between items-center text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span>Interval:</span>

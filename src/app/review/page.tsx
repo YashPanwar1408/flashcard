@@ -1,183 +1,137 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Flashcard } from '../../types';
-import FlashcardReview from '../../components/FlashcardReview';
-import Link from 'next/link';
-import { getDueCards, updateFlashcard, getDecks } from '../../utils/localStorage';
-import { getDeckBgColor, getDeckTextColor } from '../../utils/deckColors';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Flashcard } from '@/types';
+import { loadFlashcards, saveFlashcards } from '@/utils/localStorage';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { BadgeCheck } from 'lucide-react';
+import { Calculator, MessageSquare } from 'lucide-react';
+import FlashcardReview from '@/components/FlashcardReview';
 
-export default function ReviewPage() {
-  const [allDueCards, setAllDueCards] = useState<Flashcard[]>([]);
-  const [filteredCards, setFilteredCards] = useState<Flashcard[]>([]);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [reviewedCards, setReviewedCards] = useState<Flashcard[]>([]);
-  const [isReviewComplete, setIsReviewComplete] = useState(false);
-  const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
-  const [decks, setDecks] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Get the deck parameter from URL if available
+function ReviewContent() {
+  const [dueCards, setDueCards] = useState<Flashcard[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [reviewComplete, setReviewComplete] = useState<boolean>(false);
+  const [reviewedCount, setReviewedCount] = useState<number>(0);
   const searchParams = useSearchParams();
   const deckParam = searchParams.get('deck');
 
-  // Load cards due today and available decks on component mount
+  // Load due cards from localStorage on component mount
   useEffect(() => {
-    // Use setTimeout to ensure this runs on client-side only
     const timeoutId = setTimeout(() => {
-      const dueCards = getDueCards();
-      const availableDecks = Array.from(new Set(dueCards.map(card => card.deck)));
-      
-      setAllDueCards(dueCards);
-      setDecks(availableDecks);
-      
-      // If deck parameter exists, set it as selected deck
-      if (deckParam && availableDecks.includes(deckParam)) {
-        setSelectedDeck(deckParam);
-      }
-      
-      setIsLoading(false);
-      
-      if (dueCards.length === 0) {
-        setIsReviewComplete(true);
+      try {
+        const allCards = loadFlashcards();
+        
+        // Filter for due cards (and optionally by deck)
+        let filtered = allCards.filter(card => {
+          const cardDueDate = new Date(card.nextReview);
+          const now = new Date();
+          
+          cardDueDate.setHours(0, 0, 0, 0);
+          now.setHours(0, 0, 0, 0);
+          
+          return cardDueDate <= now;
+        });
+        
+        // Filter by deck if specified
+        if (deckParam) {
+          filtered = filtered.filter(card => card.deck === deckParam);
+        }
+        
+        // Sort by oldest due date first
+        filtered.sort((a, b) => 
+          new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime()
+        );
+        
+        setDueCards(filtered);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading due cards:', error);
+        setIsLoading(false);
       }
     }, 0);
-
+    
     return () => clearTimeout(timeoutId);
   }, [deckParam]);
 
-  // Filter cards when deck selection changes
-  useEffect(() => {
-    if (selectedDeck) {
-      const deckCards = allDueCards.filter(card => card.deck === selectedDeck);
-      setFilteredCards(deckCards);
-      setCurrentCardIndex(0);
-      
-      if (deckCards.length === 0) {
-        setIsReviewComplete(true);
-      } else {
-        setIsReviewComplete(false);
-      }
-    } else {
-      setFilteredCards(allDueCards);
-      setCurrentCardIndex(0);
-      
-      if (allDueCards.length === 0) {
-        setIsReviewComplete(true);
-      } else {
-        setIsReviewComplete(false);
-      }
-    }
-  }, [selectedDeck, allDueCards]);
-
   const handleCardReviewed = (updatedCard: Flashcard) => {
-    // Update the card in localStorage
-    updateFlashcard(updatedCard);
-    
-    // Add the updated card to reviewed cards
-    setReviewedCards(prev => [...prev, updatedCard]);
-    
-    // Update the card in the allDueCards array to keep state consistent
-    setAllDueCards(prev => 
-      prev.map(card => card.id === updatedCard.id ? updatedCard : card)
+    // Save the updated card
+    const allCards = loadFlashcards();
+    const updatedCards = allCards.map(c => 
+      c.id === updatedCard.id ? updatedCard : c
     );
+    saveFlashcards(updatedCards);
     
     // Move to the next card
-    if (currentCardIndex < filteredCards.length - 1) {
-      setCurrentCardIndex(currentCardIndex + 1);
+    setReviewedCount(prev => prev + 1);
+    
+    if (currentCardIndex < dueCards.length - 1) {
+      setCurrentCardIndex(prev => prev + 1);
     } else {
-      setIsReviewComplete(true);
+      // Review session complete
+      setReviewComplete(true);
     }
   };
-
-  const handleDeckSelect = (deck: string | null) => {
-    setSelectedDeck(deck);
-  };
-
-  // Calculate progress percentage
-  const progressPercent = filteredCards.length > 0 
-    ? Math.round((currentCardIndex / filteredCards.length) * 100)
-    : 0;
-
-  // Create tag components for deck filtering
-  const DeckTags = () => (
-    <div className="flex flex-wrap gap-2 mb-6 justify-center">
-      <Button
-        variant={selectedDeck === null ? "default" : "outline"}
-      className="flex-1 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 text-white border-0 transition-all duration-200 hover:shadow-md hover:scale-105 transform"
-        onClick={() => handleDeckSelect(null)}
-      >
-        All Decks
-      </Button>
+  
+  const restartReview = () => {
+    // Refresh due cards
+    const allCards = loadFlashcards();
+    
+    let filtered = allCards.filter(card => {
+      const cardDueDate = new Date(card.nextReview);
+      const now = new Date();
       
-      {decks.map(deck => {
-        const isSelected = selectedDeck === deck;
-        const bgColor = isSelected ? getDeckBgColor(deck) : '';
-        const textColor = isSelected ? getDeckTextColor(deck) : '';
-        
-        return (
-          <Button
-            key={deck}
-            variant={isSelected ? "default" : "outline"}
-            className={`rounded-full text-sm shadow-sm ${
-              isSelected ? `${bgColor} ${textColor} transform scale-105` : ''
-            }`}
-            onClick={() => handleDeckSelect(deck)}
-          >
-            {deck}
-          </Button>
-        );
-      })}
-    </div>
-  );
-
+      cardDueDate.setHours(0, 0, 0, 0);
+      now.setHours(0, 0, 0, 0);
+      
+      return cardDueDate <= now;
+    });
+    
+    if (deckParam) {
+      filtered = filtered.filter(card => card.deck === deckParam);
+    }
+    
+    filtered.sort((a, b) => 
+      new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime()
+    );
+    
+    setDueCards(filtered);
+    setCurrentCardIndex(0);
+    setReviewComplete(false);
+    setReviewedCount(0);
+  };
+  
   if (isLoading) {
     return (
-      <div className="container mx-auto py-10 px-4 min-h-screen flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center p-8">
-            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
-            <h2 className="font-semibold">Loading flashcards...</h2>
-          </CardContent>
-        </Card>
+      <div className="container py-10 px-4 flex items-center justify-center min-h-[80vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <p className="text-foreground">Loading flashcards...</p>
+        </div>
       </div>
     );
   }
 
-  if (isReviewComplete) {
+  if (dueCards.length === 0) {
     return (
-      <div className="container mx-auto py-10 px-4 min-h-screen flex flex-col items-center justify-center">
-        <Card className="w-full max-w-lg overflow-hidden">
-          <div className="bg-green-500 h-2 w-full"></div>
-          <CardContent className="p-8 text-center">
-            <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <BadgeCheck className="w-8 h-8" />
-            </div>
-            
-            <h1 className="text-2xl font-bold mb-6">Review Complete!</h1>
-            
-            {selectedDeck && (
-              <>
-                <p className="mb-6 text-lg text-muted-foreground">
-                  No more cards due today in the <span className="font-semibold">{selectedDeck}</span> deck.
-                </p>
-                <DeckTags />
-              </>
-            )}
-            
-            {!selectedDeck && (
-              <p className="mb-6 text-lg text-muted-foreground">
-                You've reviewed {reviewedCards.length} flashcards today.
-              </p>
-            )}
-            
-            <div className="mt-8">
-              <Button asChild size="lg" className="bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 text-white border-0 transition-all duration-200 hover:shadow-md hover:scale-105 transform">
-                <Link href="/">Return to Home</Link>
+      <div className="container py-10 px-4">
+        <Card className="max-w-lg mx-auto">
+          <CardContent className="pt-6 pb-6 flex flex-col items-center text-center">
+            <Calculator className="h-12 w-12 mb-4 text-primary" />
+            <h2 className="text-2xl font-bold mb-2 text-foreground">No Cards Due</h2>
+            <p className="text-muted-foreground mb-6">
+              {deckParam 
+                ? `There are no cards due for review in the &quot;${deckParam}&quot; deck.`
+                : "You're all caught up! There are no cards due for review."}
+            </p>
+            <div className="flex gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => window.history.back()}
+              >
+                Go Back
               </Button>
             </div>
           </CardContent>
@@ -186,18 +140,32 @@ export default function ReviewPage() {
     );
   }
 
-  if (filteredCards.length === 0) {
+  if (reviewComplete) {
     return (
-      <div className="container mx-auto py-10 px-4 min-h-screen flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <h1 className="text-2xl font-bold mb-6">No Cards to Review</h1>
+      <div className="container py-10 px-4">
+        <Card className="max-w-lg mx-auto">
+          <CardContent className="pt-6 pb-6 flex flex-col items-center text-center">
+            <MessageSquare className="h-12 w-12 mb-4 text-primary" />
+            <h2 className="text-2xl font-bold mb-2 text-foreground">Review Complete!</h2>
             <p className="text-muted-foreground mb-6">
-              There are no cards due for review at the moment.
+              You&apos;ve successfully reviewed {reviewedCount} cards.
             </p>
-            <Button asChild className="bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 text-white border-0 transition-all duration-200 hover:shadow-md hover:scale-105 transform">
-              <Link href="/">Return to Home</Link>
-            </Button>
+            <div className="flex gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => window.history.back()}
+              >
+                Go Back
+              </Button>
+              
+              {dueCards.length > 0 && (
+                <Button 
+                  onClick={restartReview}
+                >
+                  Review More Cards
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -205,38 +173,37 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 md:py-10 px-4 min-h-screen">
-      <div className="max-w-lg mx-auto">
-        {/* Progress bar */}
-        <div className="w-full bg-muted h-2.5 rounded-full overflow-hidden mb-6">
-          <div 
-            className="h-full bg-primary rounded-full transition-all duration-300 ease-out" 
-            style={{ width: `${progressPercent}%` }}
-          ></div>
+    <div className="container py-6 md:py-10 px-4">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold tracking-tight mb-6 text-foreground">
+          {deckParam ? `Studying: ${deckParam}` : 'Review Cards'}
+        </h1>
+        
+        <div className="text-sm text-muted-foreground mb-6 flex justify-between">
+          <span>Card {currentCardIndex + 1} of {dueCards.length}</span>
+          <span>{reviewedCount} reviewed</span>
         </div>
         
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl md:text-2xl font-bold">
-            Review {currentCardIndex + 1} of {filteredCards.length}
-          </h1>
-          <span className="text-muted-foreground text-sm">
-            {progressPercent}% complete
-          </span>
-        </div>
-        
-        <DeckTags />
-        
-        <FlashcardReview
-          card={filteredCards[currentCardIndex]}
+        <FlashcardReview 
+          card={dueCards[currentCardIndex]} 
           onCardReviewed={handleCardReviewed}
         />
-        
-        <div className="mt-8 text-center">
-          <Button variant="link" asChild className="bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 text-white border-0 transition-all duration-200 hover:shadow-md hover:scale-105 transform">
-            <Link href="/">Return to Home</Link>
-          </Button>
-        </div>
       </div>
     </div>
+  );
+}
+
+export default function ReviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="container py-10 px-4 flex items-center justify-center min-h-[80vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <p className="text-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ReviewContent />
+    </Suspense>
   );
 } 

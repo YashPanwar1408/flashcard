@@ -3,19 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { loadFlashcards, saveFlashcards } from '@/utils/localStorage';
 import { Flashcard } from '@/types';
-import { getDeckBgColor, getDeckTextColor, getDeckLightBgColor } from '@/utils/deckColors';
+import { getDeckBgColor, getDeckTextColor } from '@/utils/deckColors';
 import { 
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Pencil, Plus, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function DecksPage() {
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [decks, setDecks] = useState<Record<string, Flashcard[]>>({});
   const [stats, setStats] = useState<Record<string, { total: number, due: number }>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +65,6 @@ export default function DecksPage() {
     const timeoutId = setTimeout(() => {
       try {
         const cards = loadFlashcards();
-        setFlashcards(cards);
         
         // Group cards by deck
         const deckMap: Record<string, Flashcard[]> = {};
@@ -137,7 +133,6 @@ export default function DecksPage() {
         {Object.keys(decks).map(deckName => {
           const deckBgColor = getDeckBgColor(deckName);
           const deckTextColor = getDeckTextColor(deckName);
-          const deckLightBg = getDeckLightBgColor(deckName);
           
           return (
             <Card key={deckName} className="overflow-hidden border-2 hover:border-primary/50 transition-all">

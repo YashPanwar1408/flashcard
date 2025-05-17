@@ -3,17 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { mockReviewStats, formatDate } from '../../mockData';
-import { loadFlashcards, getDueCards, getDecks } from '../../utils/localStorage';
-import { Flashcard } from '../../types';
+import { loadFlashcards, getDueCards } from '../../utils/localStorage';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { getDeckBgColor, getDeckTextColor, getDeckLightBgColor, getDeckDarkTextColor } from '../../utils/deckColors';
+import { getDeckBgColor } from '../../utils/deckColors';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpRight, Award, CalendarDays, Calendar, BookOpen, BarChart3 } from 'lucide-react';
+import { ArrowUpRight, Award, CalendarDays, BookOpen } from 'lucide-react';
 
 export default function DashboardPage() {
   const [dueCardsCount, setDueCardsCount] = useState<number>(0);
@@ -79,9 +78,6 @@ export default function DashboardPage() {
 
   // Calculate total reviews
   const totalReviews = Object.values(studyHistory).reduce((sum, count) => sum + count, 0);
-
-  // Calculate mastered cards
-  const masteredCards = 0; // In a real app, this would count cards with repetitions > 5
 
   if (isLoading) {
     return (
@@ -183,7 +179,7 @@ export default function DashboardPage() {
                     Your study activity over time
                   </CardDescription>
                 </div>
-                <Tabs value={selectedTimeRange} onValueChange={(value) => setSelectedTimeRange(value as any)}>
+                <Tabs value={selectedTimeRange} onValueChange={(value) => setSelectedTimeRange(value as 'week' | 'month' | 'year')}>
                   <TabsList className="grid grid-cols-3 w-[240px]">
                     <TabsTrigger value="week">Week</TabsTrigger>
                     <TabsTrigger value="month">Month</TabsTrigger>
@@ -297,9 +293,6 @@ export default function DashboardPage() {
             <CardContent className="pt-6">
               <div className="space-y-4 max-h-[240px] overflow-y-auto pr-1">
                 {Object.entries(deckCounts).map(([deck, count]) => {
-                  const bgColor = getDeckLightBgColor(deck);
-                  const textColor = getDeckDarkTextColor(deck);
-                  
                   return (
                     <div 
                       key={deck} 

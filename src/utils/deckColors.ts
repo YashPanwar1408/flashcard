@@ -2,82 +2,86 @@
  * Provides consistent colors for decks across the application
  */
 
-// Fixed color mapping for specific deck names
-const DECK_COLORS: Record<string, string> = {
-  'JavaScript': 'bg-yellow-500',
-  'Math': 'bg-blue-500',
-  'English': 'bg-green-500',
-  'Science': 'bg-indigo-500',
-  'History': 'bg-red-500',
-  'Geography': 'bg-purple-500'
-};
-
-// Array of tailwind background colors for random assignment
-const FALLBACK_COLORS = [
-  'bg-pink-500',
-  'bg-orange-500',
-  'bg-teal-500',
-  'bg-cyan-500',
-  'bg-lime-500',
-  'bg-amber-500',
-  'bg-emerald-500',
-  'bg-violet-500',
-  'bg-rose-500',
-];
-
-// Keep track of assigned colors for consistency
-const assignedColors: Record<string, string> = {};
-let colorIndex = 0;
-
-/**
- * Gets a consistent background color for a deck
- */
-export const getDeckBgColor = (deckName: string): string => {
-  // Return pre-defined color if available
-  if (DECK_COLORS[deckName]) {
-    return DECK_COLORS[deckName];
-  }
+export function getDeckBgColor(deckName: string): string {
+  const colorMap: Record<string, string> = {
+    'JavaScript': 'bg-yellow-500',
+    'TypeScript': 'bg-blue-500',
+    'React': 'bg-cyan-500',
+    'Node.js': 'bg-green-500',
+    'HTML': 'bg-orange-500',
+    'CSS': 'bg-pink-500',
+    'Python': 'bg-indigo-500',
+    'Java': 'bg-red-500',
+    'Math': 'bg-blue-600',
+    'English': 'bg-green-600'
+  };
   
-  // Return previously assigned color if exists
-  if (assignedColors[deckName]) {
-    return assignedColors[deckName];
-  }
+  return colorMap[deckName] || `bg-gray-500`;
+}
+
+export function getDeckTextColor(deckName: string): string {
+  const colorMap: Record<string, string> = {
+    'JavaScript': 'text-yellow-100',
+    'TypeScript': 'text-blue-100',
+    'React': 'text-cyan-100',
+    'Node.js': 'text-green-100',
+    'HTML': 'text-orange-100',
+    'CSS': 'text-pink-100',
+    'Python': 'text-indigo-100',
+    'Java': 'text-red-100',
+    'Math': 'text-blue-100',
+    'English': 'text-green-100'
+  };
   
-  // Assign a new color
-  const newColor = FALLBACK_COLORS[colorIndex % FALLBACK_COLORS.length];
-  assignedColors[deckName] = newColor;
-  colorIndex++;
+  return colorMap[deckName] || `text-gray-100`;
+}
+
+export function getDeckLightBgColor(deckName: string): string {
+  const colorMap: Record<string, string> = {
+    'JavaScript': 'bg-yellow-100',
+    'TypeScript': 'bg-blue-100',
+    'React': 'bg-cyan-100',
+    'Node.js': 'bg-green-100',
+    'HTML': 'bg-orange-100',
+    'CSS': 'bg-pink-100',
+    'Python': 'bg-indigo-100',
+    'Java': 'bg-red-100',
+    'Math': 'bg-blue-100',
+    'English': 'bg-green-100'
+  };
   
-  return newColor;
-};
+  return colorMap[deckName] || `bg-gray-100`;
+}
 
-/**
- * Gets a consistent text color for a deck
- */
-export const getDeckTextColor = (deckName: string): string => {
-  return 'text-white'; // All background colors are dark enough for white text
-};
+export function getDeckDarkTextColor(deckName: string): string {
+  const colorMap: Record<string, string> = {
+    'JavaScript': 'text-yellow-800',
+    'TypeScript': 'text-blue-800',
+    'React': 'text-cyan-800',
+    'Node.js': 'text-green-800',
+    'HTML': 'text-orange-800',
+    'CSS': 'text-pink-800',
+    'Python': 'text-indigo-800',
+    'Java': 'text-red-800',
+    'Math': 'text-blue-800',
+    'English': 'text-green-800'
+  };
+  
+  return colorMap[deckName] || `text-gray-800`;
+}
 
-/**
- * Gets a lighter background color for hover states
- */
-export const getDeckHoverBgColor = (deckName: string): string => {
-  const bgColor = getDeckBgColor(deckName);
-  return bgColor.replace('-500', '-600');
-};
-
-/**
- * Gets a lighter background color for UI elements
- */
-export const getDeckLightBgColor = (deckName: string): string => {
-  const bgColor = getDeckBgColor(deckName);
-  return bgColor.replace('-500', '-100');
-};
-
-/**
- * Gets a consistent text color for light backgrounds
- */
-export const getDeckDarkTextColor = (deckName: string): string => {
-  const bgColor = getDeckBgColor(deckName);
-  return bgColor.replace('bg-', 'text-').replace('-500', '-700');
-}; 
+export function getRandomDeckColor(): string {
+  const colors = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-red-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-cyan-500',
+  ];
+  
+  const randomIndex = Math.floor(Math.random() * colors.length);
+  return colors[randomIndex];
+} 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Flashcard } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Plus, Save } from 'lucide-react';
 
-export default function CreateCardPage() {
+function CreateCardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const newDeckParam = searchParams.get('newDeck');
@@ -213,5 +213,20 @@ export default function CreateCardPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function CreateCardPage() {
+  return (
+    <Suspense fallback={
+      <div className="container py-10 px-4 flex items-center justify-center min-h-[80vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <p className="text-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CreateCardContent />
+    </Suspense>
   );
 } 

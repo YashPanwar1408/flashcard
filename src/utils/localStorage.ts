@@ -1,4 +1,6 @@
-import { Flashcard } from "../types";
+'use client';
+
+import { Flashcard } from '@/types';
 import { mockFlashcards } from "../mockData";
 
 const FLASHCARDS_STORAGE_KEY = "flashcards";
@@ -12,23 +14,23 @@ export const loadFlashcards = (): Flashcard[] => {
   }
 
   try {
-    const storedData = localStorage.getItem(FLASHCARDS_STORAGE_KEY);
+    const savedData = localStorage.getItem(FLASHCARDS_STORAGE_KEY);
     
-    if (!storedData) {
+    if (!savedData) {
       // Initialize localStorage with mock data on first load
       saveFlashcards(mockFlashcards);
       return mockFlashcards;
     }
-
-    // Parse stored flashcards and convert string dates back to Date objects
-    const parsedData: Flashcard[] = JSON.parse(storedData).map((card: any) => ({
+    
+    const parsedData = JSON.parse(savedData);
+    
+    // Convert string dates back to Date objects
+    return parsedData.map((card: Flashcard) => ({
       ...card,
       nextReview: new Date(card.nextReview)
     }));
-    
-    return parsedData;
   } catch (error) {
-    console.error("Error loading flashcards from localStorage:", error);
+    console.error('Failed to load flashcards from localStorage:', error);
     return mockFlashcards;
   }
 };
@@ -44,7 +46,7 @@ export const saveFlashcards = (flashcards: Flashcard[]): void => {
   try {
     localStorage.setItem(FLASHCARDS_STORAGE_KEY, JSON.stringify(flashcards));
   } catch (error) {
-    console.error("Error saving flashcards to localStorage:", error);
+    console.error('Failed to save flashcards to localStorage:', error);
   }
 };
 
@@ -66,14 +68,14 @@ export const updateFlashcard = (updatedCard: Flashcard): Flashcard[] => {
  * Get cards due for review today
  */
 export const getDueCards = (): Flashcard[] => {
-  const cards = loadFlashcards();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return cards.filter(card => {
-    const cardDate = new Date(card.nextReview);
-    cardDate.setHours(0, 0, 0, 0);
-    return cardDate <= today;
+  const allCards = loadFlashcards();
+  const now = new Date();
+  now.setHours(0, 0, 0, 0); // Compare dates by day only
+  
+  return allCards.filter(card => {
+    const nextReview = new Date(card.nextReview);
+    nextReview.setHours(0, 0, 0, 0);
+    return nextReview <= now;
   });
 };
 
@@ -82,5 +84,6 @@ export const getDueCards = (): Flashcard[] => {
  */
 export const getDecks = (): string[] => {
   const cards = loadFlashcards();
-  return Array.from(new Set(cards.map(card => card.deck)));
+  const decks = new Set(cards.map(card => card.deck));
+  return Array.from(decks);
 }; 
