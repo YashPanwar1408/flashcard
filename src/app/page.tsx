@@ -65,7 +65,7 @@ export default function Home() {
                   <p className="text-sm text-muted-foreground">cards to review</p>
                 </div>
                 {dueCards.length > 0 && (
-                  <Link href="/review">
+                  <Link href="/review" className="flex-1 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 text-white border-0 transition-all duration-200 hover:shadow-md hover:scale-105 transform">
                     <Button>Start Review</Button>
                   </Link>
                 )}
